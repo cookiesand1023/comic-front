@@ -3,25 +3,50 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
 import { AiFillMail } from "react-icons/ai"
+import {SubmitHandler, useForm} from "react-hook-form";
+import {useRouter} from "next/router";
+import {baseAxios} from "@/pages/_app";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaMail = chakra(AiFillMail)
 const CFaLock = chakra(FaLock);
 
+type Inputs = {
+  email: string,
+  name: string,
+  password: string,
+};
+
+type SignupErr = {
+  message: string | null,
+}
+
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm<Inputs>()
+  const { replace } = useRouter()
+  const [ signUpErrMsg, setSignUpErrMsg ] = useState<SignupErr>({message: null})
+
+  const doSignUp: SubmitHandler<Inputs> = async (data) => {
+    await baseAxios.post("/signup", data, { withCredentials: true }).then(() => {
+      location.href = "/"
+    }).catch((e) => {
+      setSignUpErrMsg({ message: "ユーザー登録に失敗しました" })
+      console.log(e.response.data.message)
+    })
+  }
 
   const handleShowClick = () => setShowPassword(!showPassword);
   return (
     <>
-      <Flex
-        flexDirection="column"
-        width="100wh"
-        height="100vh"
-        backgroundColor="gray.200"
-        justifyContent="top"
-        alignItems="center"
-      >
+      {/*<Flex*/}
+      {/*  flexDirection="column"*/}
+      {/*  width="100wh"*/}
+      {/*  height="100vh"*/}
+      {/*  backgroundColor="whiteAlpha.900"*/}
+      {/*  justifyContent="top"*/}
+      {/*  alignItems="center"*/}
+      {/*>*/}
         <Stack
           flexDir="column"
           mb="2"
@@ -31,19 +56,22 @@ export default function SignUp() {
         >
 
           <Box minW={{ base: "90%", md: "468px" }}>
-            <form>
+            <form onSubmit={handleSubmit(doSignUp)}>
               <Stack
-                spacing={4}
-                p="1rem"
-                backgroundColor="whiteAlpha.900"
-                boxShadow="md"
-                borderRadius="lg"
+                  spacing={4}
+                  p="1rem"
+                  backgroundColor="whiteAlpha.900"
+                  boxShadow="xl"
+                  borderRadius="lg"
+                  border="1px"
+                  borderColor="gray.200"
               >
                 <Box textAlign='center'>
                   <Avatar size='lg' bg="gray.500" my={2} />
                   <Heading pb={3} size='md' textAlign='left'>Sign Up</Heading>
                 </Box>
-                <FormControl>
+                <Text textAlign='center' fontSize='xs' color='tomato' mt={1}>{signUpErrMsg?.message}</Text>
+                <div>
                   <Text textAlign="left" fontSize='xs' mb={1}>
                     Email
                   </Text>
@@ -51,10 +79,18 @@ export default function SignUp() {
                     <InputLeftElement pointerEvents='none'>
                       <CFaMail color='gray.300'/>
                     </InputLeftElement>
-                    <Input type="email" />
+                    <Input {...register("email", {
+                      required: "メールアドレスを入力してください",
+                      pattern: {
+                        value: /^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$/i,
+                        message: "メールアドレスを正しい形式で入力してください",
+                      }
+                    })}
+                           borderColor={errors.email ? "red.300" : null}/>
                   </InputGroup>
-                </FormControl>
-                <FormControl>
+                  <Text fontSize='xs' color='tomato' mt={1}>{errors.email?.message}</Text>
+                </div>
+                <div>
                   <Text textAlign="left" fontSize='xs' mb={1}>
                     UserName
                   </Text>
@@ -62,10 +98,20 @@ export default function SignUp() {
                     <InputLeftElement pointerEvents="none">
                       <CFaUserAlt color="gray.300" />
                     </InputLeftElement>
-                    <Input type="email" />
+                    <Input
+                        {...register("name", {
+                          required: "ユーザーネームを入力してください",
+                          maxLength: {
+                            value: 20,
+                            message: "ユーザーネームは20文字以内で入力してください",
+                          },
+                        })}
+                        borderColor={errors.name ?"red.300" : null}
+                    />
                   </InputGroup>
-                </FormControl>
-                <FormControl>
+                  <Text fontSize='xs' color='tomato' mt={1}>{errors.name?.message}</Text>
+                </div>
+                <div>
                   <Text textAlign="left" fontSize='xs' mb={1}>
                     Password
                   </Text>
@@ -74,7 +120,19 @@ export default function SignUp() {
                       <CFaLock color="gray.300" />
                     </InputLeftElement>
                     <Input
-                      type={showPassword ? "text" : "password"}
+                        type={showPassword ? "text" : "password"}
+                        {...register("password", {
+                          required: "パスワードを入力してください",
+                          minLength: {
+                            value: 8,
+                            message: "パスワードは8~20文字で入力してください"
+                          },
+                          maxLength: {
+                            value: 20,
+                            message: "パスワードは8~20文字で入力してください",
+                          },
+                        })}
+                        borderColor={errors.password ?"red.300" : null}
                     />
                     <InputRightElement width="4.5rem">
                       <Button h="1.75rem" size="sm" onClick={handleShowClick}>
@@ -82,10 +140,11 @@ export default function SignUp() {
                       </Button>
                     </InputRightElement>
                   </InputGroup>
+                  <Text fontSize='xs' color='tomato' mt={1}>{errors.password?.message}</Text>
                   {/* <FormHelperText textAlign="right">
                     <Link>forgot password?</Link>
                   </FormHelperText> */}
-                </FormControl>
+                </div>
                 <Box pt={8}>
                   <Button
                     borderRadius={0}
@@ -107,7 +166,7 @@ export default function SignUp() {
             Sign In
           </Link>
         </Box>
-      </Flex>
+      {/*</Flex>*/}
     </>
   )
 }

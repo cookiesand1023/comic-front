@@ -17,7 +17,7 @@ export default function Header() {
     }, [])
   return (
     <>
-      <Box w='100%' h='70px' p={4} color='white' bgGradient='linear(to-b, teal.500, teal.400)' boxShadow='base'>
+      <Box w='100%' h='70px' p={4} boxShadow='base' backgroundColor={"#FFFFFF"}>
         <Text fontSize='2xl'>ComicLib</Text>
       </Box>
     </>

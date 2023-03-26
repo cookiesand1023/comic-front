@@ -1,5 +1,5 @@
 import { Card, CardHeader, Heading, CardBody, CardFooter, Button, Text, Container, VStack, Input, Box, Avatar, Flex, FormControl, FormHelperText, InputGroup, InputLeftElement, InputRightElement, Link, Stack, chakra } from "@chakra-ui/react";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { AiFillMail } from "react-icons/ai";
 import { FaUserAlt, FaLock } from "react-icons/fa";
 import {SubmitHandler, useForm} from "react-hook-form";
@@ -15,14 +15,23 @@ type Inputs = {
   password: string,
 };
 
+type LoginErr = {
+  message: string | null,
+}
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<Inputs>()
-  const { replace } = useRouter()
+  const { replace, push } = useRouter()
+  const [ loginErrMsg, setLoginErrMsg ] = useState<LoginErr>({message: null})
+
   const doSignIn: SubmitHandler<Inputs> = async (data) => {
     await baseAxios.post("/signin", data, { withCredentials: true }).then(() => {
-        replace("/")
+        location.href = "/"
     }).catch((e) => {
+      if (e.response.status == 400) {
+        setLoginErrMsg({ message: "ログインに失敗しました" })
+      }
       console.log(e.response.data.message)
     })
   }
@@ -30,14 +39,14 @@ export default function Login() {
   const handleShowClick = () => setShowPassword(!showPassword);
   return (
     <>
-      <Flex
-        flexDirection="column"
-        width="100wh"
-        height="100vh"
-        backgroundColor="gray.200"
-        justifyContent="top"
-        alignItems="center"
-      >
+      {/*<Flex*/}
+      {/*  flexDirection="column"*/}
+      {/*  width="100wh"*/}
+      {/*  height="100vh"*/}
+      {/*  backgroundColor="gray.100"*/}
+      {/*  justifyContent="top"*/}
+      {/*  alignItems="center"*/}
+      {/*>*/}
         <Stack
           flexDir="column"
           mb="2"
@@ -52,13 +61,16 @@ export default function Login() {
                 spacing={4}
                 p="1rem"
                 backgroundColor="whiteAlpha.900"
-                boxShadow="md"
+                boxShadow="xl"
                 borderRadius="lg"
+                border="1px"
+                borderColor="gray.200"
               >
                 <Box textAlign='center'>
                   <Avatar size='lg' bg="teal.500" my={2} />
                   <Heading pb={3} size='md' textAlign='left'>Sign In</Heading>
                 </Box>
+                <Text textAlign='center' fontSize='xs' color='tomato' mt={1}>{loginErrMsg?.message}</Text>
                 <div>
                   <Text textAlign="left" fontSize='xs' mb={1}>
                     Email
@@ -133,7 +145,7 @@ export default function Login() {
             Sign Up
           </Link>
         </Box>
-      </Flex>
+      {/*</Flex>*/}
     </>
   )
 }
