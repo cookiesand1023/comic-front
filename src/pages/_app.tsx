@@ -1,15 +1,16 @@
 import '@/styles/globals.css'
-import { ChakraProvider } from '@chakra-ui/react'
+import {ChakraProvider, Flex} from '@chakra-ui/react'
 import { AuthProvider } from "@/component/Authentication"
 import type {AppContext, AppProps} from 'next/app'
 import Layout from './layout'
 import {SSRProvider} from "react-aria";
-import React, {Context, createContext, useEffect, useLayoutEffect} from "react";
+import React, {Context, createContext, useEffect, useLayoutEffect, useState} from "react";
 import axios from "axios";
 import {GetServerSideProps, NextPageContext} from "next";
 // @ts-ignore
 import { encycle, decycle } from "json-cyclic"
-import {Router} from "next/router";
+import {Router, useRouter} from "next/router";
+import {parseCookies} from "nookies";
 
 export const useIsomorphicLayoutEffect =
     typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -22,37 +23,48 @@ export const baseAxios = axios.create({
 
 interface MyAppProps extends AppProps {
     isAuthenticated: boolean;
-    userInfo: UserInfo | null
+    userInfo: UserInfo | undefined
 }
 
 type AuthContextProps = {
     isAuth: boolean
-    userInfo: UserInfo | null
+    userInfo: UserInfo | undefined
 }
 
 type UserInfo = {
+    id: number
     name: string
     age: number
     sex: string
     uuid: string
 }
 
-export const AuthContext = createContext<AuthContextProps>({ isAuth: false, userInfo: null})
+export const AuthContext = createContext<AuthContextProps>({ isAuth: false, userInfo: undefined})
 
 App.getInitialProps = async (ctx: AppContext) => {
-    console.log(ctx.ctx.pathname)
-    console.log("getInitialProps開始")
     const { req, res, pathname } = ctx.ctx;
     const toAuthenticate = !['/signin', '/signup'].includes(pathname);
     let isAuthenticated = false;
-    let userInfo = null;
+    let userInfo = {
+        id: null,
+        name: null,
+        age: null,
+        sex: null,
+        uuid: null
+    }
 
     if (req?.cookies?.cg) {
         try {
-            const response = await verifyToken(ctx.ctx);
+            const response = await verifyToken(req.headers.cookie);
             if (response.status === 200) {
                 isAuthenticated = true;
-                userInfo = response.data;
+                userInfo = {
+                    id: response.data.ID,
+                    name: response.data.name,
+                    age: response.data.age,
+                    sex: response.data.sex,
+                    uuid: response.data.uuid
+                }
             }
         } catch (err) {
             console.error('Failed to verify token:', err);
@@ -70,26 +82,32 @@ App.getInitialProps = async (ctx: AppContext) => {
     return decycle({ ...ctx.ctx, isAuthenticated, userInfo });
 }
 
-const verifyToken = async (ctx: AppContext): Promise<boolean> => {
+export const verifyToken = async (cookie: any): Promise<boolean> => {
     return await baseAxios.get("/auth/verify", {
-        headers: { cookie: ctx.req.headers.cookie },
+        headers: { "Cookie": cookie },
         withCredentials: true
     })
 }
 
 export default function App(props: MyAppProps) {
-    const { isAuthenticated, userInfo, pageProps, Component } = props
+    const {isAuthenticated, pageProps, Component} = props
+
     return (
-        <SSRProvider>
             <ChakraProvider>
-                <AuthProvider isAuthenticated={isAuthenticated}>
-                    <AuthContext.Provider value={{ isAuth: isAuthenticated, userInfo: userInfo }}>
-                        <Layout>
-                            <Component {...pageProps} />
-                        </Layout>
-                    </AuthContext.Provider>
-                </AuthProvider>
+                <AuthContext.Provider value={{isAuth: isAuthenticated, userInfo: props.userInfo}}>
+                    <Layout>
+                        <Flex
+                            flexDirection="column"
+                            width="100wh"
+                            height="100vh"
+                            justifyContent="top"
+                            alignItems="center"
+                        >
+                        <p>{props.userInfo?.name}</p>
+                        <Component {...pageProps} />
+                        </ Flex>
+                    </Layout>
+                </AuthContext.Provider>
             </ChakraProvider>
-        </SSRProvider>
-  )
+    )
 }

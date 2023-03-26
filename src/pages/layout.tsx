@@ -8,12 +8,12 @@ export default function Layout({
 }: {
   children: React.ReactNode,
 }) {
-  return (
-    <>
-      <Header />
-      <Box as="main">
-        {children}
-      </Box>
-    </>
+    return (
+        <>
+            <Header/>
+            <Box as="main">
+                {children}
+            </Box>
+        </>
   )
 }
